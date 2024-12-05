@@ -18,13 +18,40 @@ import {
     TextField,
     CircularProgress,
     Alert,
+    MenuItem,
 } from '@mui/material';
+
+enum Currency {
+    ETH = 'ETH',
+    USDT = 'USDT'
+}
+
+const CURRENCY_DETAILS = {
+    [Currency.ETH]: {
+        decimals: 18,
+        symbol: 'ETH',
+        contractAddress: '',
+    },
+    [Currency.USDT]: {
+        decimals: 6,
+        symbol: 'USDT',
+        contractAddress: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+    }
+};
+
+const ERC20_ABI = [
+    'function transfer(address to, uint256 value) returns (bool)',
+    'function approve(address spender, uint256 value) returns (bool)',
+    'function balanceOf(address owner) view returns (uint256)',
+    'function allowance(address owner, address spender) view returns (uint256)'
+];
 
 interface Donation {
     id: number;
     name: string;
     message: string;
     amount: string;
+    currency: Currency;
     created_at: string;
     tx_hash?: string;
 }
@@ -46,11 +73,13 @@ const CampaignPreview = () => {
     const [loading, setLoading] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
     const [donationModalOpen, setDonationModalOpen] = useState(false);
+    const [selectedCurrency, setSelectedCurrency] = useState<Currency>(Currency.ETH);
     const [donationData, setDonationData] = useState({
         name: '',
         message: '',
         amount: '',
         campaign: id,
+        currency: Currency.ETH,
         tx_hash: ''
     });
 
@@ -87,10 +116,22 @@ const CampaignPreview = () => {
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
 
-            const tx = await signer.sendTransaction({
-                to: campaign.wallet_address,
-                value: ethers.utils.parseEther(donationData.amount)
-            });
+            let tx;
+            if (selectedCurrency === Currency.ETH) {
+                tx = await signer.sendTransaction({
+                    to: campaign.wallet_address,
+                    value: ethers.utils.parseEther(donationData.amount)
+                });
+            } else {
+                const contract = new ethers.Contract(
+                    CURRENCY_DETAILS[selectedCurrency].contractAddress,
+                    ERC20_ABI,
+                    signer
+                );
+                const decimals = CURRENCY_DETAILS[selectedCurrency].decimals;
+                const value = ethers.utils.parseUnits(donationData.amount, decimals);
+                tx = await contract.transfer(campaign.wallet_address, value);
+            }
 
             setDonationData(prev => ({ ...prev, tx_hash: tx.hash }));
             setPaymentStatus('success');
@@ -105,12 +146,23 @@ const CampaignPreview = () => {
         try {
             await axios.post(
                 `http://localhost:8000/api/v1/donation/campaigns/${id}/donate/`,
-                { ...donationData, tx_hash: txHash },
+                {
+                    ...donationData,
+                    tx_hash: txHash,
+                    currency: selectedCurrency
+                },
                 { headers: getHeaders() }
             );
             await fetchCampaignData();
             setDonationModalOpen(false);
-            setDonationData({ name: '', message: '', amount: '', campaign: id, tx_hash: '' });
+            setDonationData({
+                name: '',
+                message: '',
+                amount: '',
+                campaign: id,
+                currency: Currency.ETH,
+                tx_hash: ''
+            });
             setPaymentStatus('idle');
         } catch (error) {
             console.error('Error recording donation:', error);
@@ -171,8 +223,9 @@ const CampaignPreview = () => {
                             <Card>
                                 <CardContent>
                                     <Typography variant="body1">
-                                        <strong>{donation.name || 'Anonymous'}</strong> donated $
-                                        {parseFloat(donation.amount).toFixed(2)}
+                                        <strong>{donation.name || 'Anonymous'}</strong> donated{' '}
+                                        {parseFloat(donation.amount).toFixed(donation.currency === Currency.USDT ? 2 : 6)}{' '}
+                                        {donation.currency}
                                     </Typography>
                                     <Typography variant="body2" color="textSecondary">
                                         {donation.message || 'No message provided.'}
@@ -217,13 +270,30 @@ const CampaignPreview = () => {
                         margin="normal"
                     />
                     <TextField
-                        label="Amount in ETH"
+                        label="Amount"
                         type="number"
                         value={donationData.amount}
                         onChange={(e) => setDonationData(prev => ({ ...prev, amount: e.target.value }))}
                         fullWidth
                         margin="normal"
                     />
+                    <TextField
+                        select
+                        label="Currency"
+                        value={selectedCurrency}
+                        onChange={(e) => {
+                            setSelectedCurrency(e.target.value as Currency);
+                            setDonationData(prev => ({ ...prev, currency: e.target.value as Currency }));
+                        }}
+                        fullWidth
+                        margin="normal"
+                    >
+                        {Object.values(Currency).map((currency) => (
+                            <MenuItem key={currency} value={currency}>
+                                {currency}
+                            </MenuItem>
+                        ))}
+                    </TextField>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDonationModalOpen(false)} color="secondary">
