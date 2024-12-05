@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { ethers } from 'ethers';
+import axios from 'axios';
 import {
     Box,
     Typography,
@@ -13,9 +16,9 @@ import {
     DialogContent,
     DialogActions,
     TextField,
+    CircularProgress,
+    Alert,
 } from '@mui/material';
-import { useParams } from 'react-router-dom';
-import axios from 'axios';
 
 interface Donation {
     id: number;
@@ -23,6 +26,7 @@ interface Donation {
     message: string;
     amount: string;
     created_at: string;
+    tx_hash?: string;
 }
 
 interface Campaign {
@@ -32,95 +36,89 @@ interface Campaign {
     goal: string;
     collected: string;
     created_at: string;
-    wallet_address:string;
+    wallet_address: string;
 }
 
-const CampaignPreview: React.FC = () => {
-    const { id } = useParams<{ id: string }>(); // Extract campaign ID from the URL
+const CampaignPreview = () => {
+    const { id } = useParams<{ id: string }>();
     const [campaign, setCampaign] = useState<Campaign | null>(null);
     const [donations, setDonations] = useState<Donation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
     const [donationModalOpen, setDonationModalOpen] = useState(false);
     const [donationData, setDonationData] = useState({
         name: '',
         message: '',
         amount: '',
         campaign: id,
+        tx_hash: ''
     });
 
-    const get_headers = (): Record<string, string> => {
+    const getHeaders = () => {
         const token = localStorage.getItem('access');
-        if (token) {
-            return { Authorization: `Bearer ${token}` };
-        }
-        return {}; // Return an empty object if no token is found
+        return token ? { Authorization: `Bearer ${token}` } : {};
     };
+
+    const fetchCampaignData = async () => {
+        try {
+            const [campaignRes, donationsRes] = await Promise.all([
+                axios.get<Campaign>(`http://localhost:8000/api/v1/donation/campaigns/${id}/`, { headers: getHeaders() }),
+                axios.get<Donation[]>(`http://localhost:8000/api/v1/donation/campaigns/${id}/donations/`, { headers: getHeaders() })
+            ]);
+            setCampaign(campaignRes.data);
+            setDonations(donationsRes.data);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchCampaignData = async () => {
-            try {
-
-                // Fetch campaign details
-                const campaignResponse = await axios.get<Campaign>(
-                    `http://localhost:8000/api/v1/donation/campaigns/${id}/`,
-                    { headers: get_headers() }
-                );
-                setCampaign(campaignResponse.data);
-
-                // Fetch donations for the campaign
-                const donationsResponse = await axios.get<Donation[]>(
-                    `http://localhost:8000/api/v1/donation/campaigns/${id}/donations/`,
-                    { headers: get_headers() }
-                );
-                setDonations(donationsResponse.data);
-            } catch (error) {
-                console.error('Error fetching campaign data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchCampaignData();
     }, [id]);
 
-    const handleOpenDonationModal = () => setDonationModalOpen(true);
-    const handleCloseDonationModal = () => {
-        setDonationModalOpen(false);
-        setDonationData({ name: '', message: '', amount: '', campaign: id }); // Reset form
-    };
+    const processPayment = async () => {
+        if (!window.ethereum || !campaign) return;
 
-    const handleDonationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setDonationData({ ...donationData, [e.target.name]: e.target.value });
-    };
-
-    const handleDonate = async () => {
         try {
-            const token = localStorage.getItem('access');
-            await axios.post(
-                `http://localhost:8000/api/v1/donation/campaigns/${id}/donate/`,
-                donationData,
-                { headers: get_headers() }
-            );
-            alert('Donation successful!');
-            handleCloseDonationModal();
-            // Refresh donations
-            const donationsResponse = await axios.get<Donation[]>(
-                `http://localhost:8000/api/v1/donation/campaigns/${id}/donations/`,
-                { headers: get_headers() }
-            );
-            setDonations(donationsResponse.data);
-        } catch (error) {
-            console.error('Error making donation:', error);
-            alert('Failed to make donation.');
+            setPaymentStatus('processing');
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+
+            const tx = await signer.sendTransaction({
+                to: campaign.wallet_address,
+                value: ethers.utils.parseEther(donationData.amount)
+            });
+
+            setDonationData(prev => ({ ...prev, tx_hash: tx.hash }));
+            setPaymentStatus('success');
+            await handleDonate(tx.hash);
+        } catch (err) {
+            setPaymentStatus('error');
+            console.error('Payment failed:', err);
         }
     };
 
-    if (loading) {
-        return <Typography>Loading...</Typography>;
-    }
+    const handleDonate = async (txHash: string) => {
+        try {
+            await axios.post(
+                `http://localhost:8000/api/v1/donation/campaigns/${id}/donate/`,
+                { ...donationData, tx_hash: txHash },
+                { headers: getHeaders() }
+            );
+            await fetchCampaignData();
+            setDonationModalOpen(false);
+            setDonationData({ name: '', message: '', amount: '', campaign: id, tx_hash: '' });
+            setPaymentStatus('idle');
+        } catch (error) {
+            console.error('Error recording donation:', error);
+        }
+    };
 
-    if (!campaign) {
-        return <Typography>Campaign not found.</Typography>;
-    }
+    if (loading) return <CircularProgress />;
+    if (!campaign) return <Typography>Campaign not found.</Typography>;
 
     const shareLink = `${window.location.origin}/campaign/${id}`;
 
@@ -129,7 +127,7 @@ const CampaignPreview: React.FC = () => {
             <Typography variant="h4" gutterBottom>
                 {campaign.title}
             </Typography>
-            <Typography variant="small" gutterBottom>
+            <Typography variant="subtitle2" gutterBottom>
                 {campaign.wallet_address}
             </Typography>
             <Typography variant="body1" gutterBottom>
@@ -142,20 +140,20 @@ const CampaignPreview: React.FC = () => {
                 Collected: ${parseFloat(campaign.collected).toFixed(2)}
             </Typography>
 
-            <Divider sx={{ marginY: 2 }} />
+            <Divider sx={{ my: 2 }} />
 
             <Typography variant="h6">Share this Campaign:</Typography>
             <MuiLink href={shareLink} target="_blank" rel="noopener">
                 {shareLink}
             </MuiLink>
 
-            <Divider sx={{ marginY: 2 }} />
+            <Divider sx={{ my: 2 }} />
 
             <Button
                 variant="contained"
                 color="primary"
-                onClick={handleOpenDonationModal}
-                sx={{ marginBottom: 2 }}
+                onClick={() => setDonationModalOpen(true)}
+                sx={{ mb: 2 }}
             >
                 Donate to this Campaign
             </Button>
@@ -179,9 +177,16 @@ const CampaignPreview: React.FC = () => {
                                     <Typography variant="body2" color="textSecondary">
                                         {donation.message || 'No message provided.'}
                                     </Typography>
-                                    <Typography variant="caption" display="block" color="textSecondary">
-                                        {new Date(donation.created_at).toLocaleString()}
-                                    </Typography>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                                        <Typography variant="caption" color="textSecondary">
+                                            {new Date(donation.created_at).toLocaleString()}
+                                        </Typography>
+                                        {donation.tx_hash && (
+                                            <Typography variant="caption" color="textSecondary">
+                                                Tx: {donation.tx_hash.slice(0, 8)}...
+                                            </Typography>
+                                        )}
+                                    </Box>
                                 </CardContent>
                             </Card>
                         </Grid>
@@ -189,42 +194,49 @@ const CampaignPreview: React.FC = () => {
                 </Grid>
             )}
 
-            {/* Donation Modal */}
-            <Dialog open={donationModalOpen} onClose={handleCloseDonationModal}>
+            <Dialog open={donationModalOpen} onClose={() => setDonationModalOpen(false)}>
                 <DialogTitle>Make a Donation</DialogTitle>
                 <DialogContent>
+                    {paymentStatus === 'error' && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            Payment failed. Please try again.
+                        </Alert>
+                    )}
                     <TextField
                         label="Name"
-                        name="name"
                         value={donationData.name}
-                        onChange={handleDonationChange}
+                        onChange={(e) => setDonationData(prev => ({ ...prev, name: e.target.value }))}
                         fullWidth
                         margin="normal"
                     />
                     <TextField
                         label="Message"
-                        name="message"
                         value={donationData.message}
-                        onChange={handleDonationChange}
+                        onChange={(e) => setDonationData(prev => ({ ...prev, message: e.target.value }))}
                         fullWidth
                         margin="normal"
                     />
                     <TextField
-                        label="Amount"
-                        name="amount"
+                        label="Amount in ETH"
                         type="number"
                         value={donationData.amount}
-                        onChange={handleDonationChange}
+                        onChange={(e) => setDonationData(prev => ({ ...prev, amount: e.target.value }))}
                         fullWidth
                         margin="normal"
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDonationModal} color="secondary">
+                    <Button onClick={() => setDonationModalOpen(false)} color="secondary">
                         Cancel
                     </Button>
-                    <Button onClick={handleDonate} color="primary" variant="contained">
-                        Donate
+                    <Button
+                        onClick={processPayment}
+                        color="primary"
+                        variant="contained"
+                        disabled={paymentStatus === 'processing'}
+                        startIcon={paymentStatus === 'processing' ? <CircularProgress size={20} /> : null}
+                    >
+                        {paymentStatus === 'processing' ? 'Processing' : 'Donate'}
                     </Button>
                 </DialogActions>
             </Dialog>

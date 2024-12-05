@@ -14,7 +14,10 @@
     "@emotion/styled": "^11.13.5",
     "@mui/icons-material": "^6.1.10",
     "@mui/material": "^6.1.10",
+    "@requestnetwork/payment-processor": "^0.50.0",
+    "@requestnetwork/request-client.js": "^0.52.0",
     "axios": "^1.7.9",
+    "ethers": "^5.7.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.0.2"
