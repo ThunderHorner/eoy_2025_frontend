@@ -21,6 +21,7 @@ interface Campaign {
     description: string;
     goal: string; // Stored as string from API
     collected: string; // Stored as string from API
+    wallet_address: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -30,6 +31,7 @@ const Dashboard: React.FC = () => {
         title: '',
         description: '',
         goal: '',
+        wallet_address: '',
     });
     const navigate = useNavigate();
 
@@ -54,7 +56,7 @@ const Dashboard: React.FC = () => {
     const handleOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
-        setNewCampaign({ title: '', description: '', goal: '' });
+        setNewCampaign({ title: '', description: '', goal: '', wallet_address: '' });
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,6 +72,7 @@ const Dashboard: React.FC = () => {
                     title: newCampaign.title,
                     description: newCampaign.description,
                     goal: parseFloat(newCampaign.goal),
+                    wallet_address: newCampaign.wallet_address,
                 },
                 {
                     headers: {
@@ -97,10 +100,11 @@ const Dashboard: React.FC = () => {
             </Box>
             <Grid container spacing={3}>
                 {campaigns.map((campaign) => (
-                    <Grid item xs={12} sm={6} md={4} key={campaign.id}>
+                    <Grid item xs={12} sm={6} md={6} key={campaign.id}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6">{campaign.title}</Typography>
+                                <Typography variant="small">{campaign.wallet_address}</Typography>
                                 <Typography variant="body2" color="textSecondary">
                                     {campaign.description}
                                 </Typography>
@@ -149,6 +153,15 @@ const Dashboard: React.FC = () => {
                         name="goal"
                         type="number"
                         value={newCampaign.goal}
+                        onChange={handleChange}
+                        fullWidth
+                        margin="normal"
+                    />
+                    <TextField
+                        label="Wallet address"
+                        name="wallet_address"
+                        type="string"
+                        value={newCampaign.wallet_address.startsWith('0x') ? newCampaign.wallet_address : `0x${newCampaign.wallet_address}`}
                         onChange={handleChange}
                         fullWidth
                         margin="normal"

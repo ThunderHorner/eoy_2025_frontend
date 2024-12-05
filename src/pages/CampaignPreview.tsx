@@ -32,6 +32,7 @@ interface Campaign {
     goal: string;
     collected: string;
     created_at: string;
+    wallet_address:string;
 }
 
 const CampaignPreview: React.FC = () => {
@@ -127,6 +128,9 @@ const CampaignPreview: React.FC = () => {
         <Box padding={4}>
             <Typography variant="h4" gutterBottom>
                 {campaign.title}
+            </Typography>
+            <Typography variant="small" gutterBottom>
+                {campaign.wallet_address}
             </Typography>
             <Typography variant="body1" gutterBottom>
                 {campaign.description}
