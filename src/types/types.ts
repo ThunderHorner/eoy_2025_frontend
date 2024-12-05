@@ -1,6 +1,7 @@
 export enum Currency {
     ETH = 'ETH',
-    USDT = 'USDT'
+    USDT = 'USDT',
+    USDC = 'USDC'
 }
 
 export const CURRENCY_DETAILS = {
@@ -12,8 +13,14 @@ export const CURRENCY_DETAILS = {
     [Currency.USDT]: {
         decimals: 6,
         symbol: 'USDT',
-        contractAddress: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+        contractAddress: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb'
+    },
+    [Currency.USDC]: {
+        decimals: 6,
+        symbol: 'USDC',
+        contractAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
     }
+
 };
 
 export const ERC20_ABI = [
