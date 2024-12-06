@@ -37,8 +37,8 @@ pipeline {
                             npm install &&
                             npm run build &&
                             rm -rf ${HTML_OUTPUT_DIR} &&
-                            mkdir -p ${HTML_OUTPUT_DIR} &&
-                            cp -r ${BUILD_DIR}/* ${HTML_OUTPUT_DIR}/'
+                            sudo mkdir -p ${HTML_OUTPUT_DIR} &&
+                            sudo cp -r ${BUILD_DIR}/* ${HTML_OUTPUT_DIR}/'
                         """
                     }
                 }
