@@ -164,7 +164,9 @@ const CampaignPreview = () => {
         }
     };
 
-    const handleMobileWalletSelection = (wallet: 'metamask' | 'trust') => {
+    const handleMobileWalletSelection = async (wallet: 'metamask' | 'trust') => {
+        if (!campaign) return;
+
         // Save donation data and wallet type
         sessionStorage.setItem('pendingDonation', JSON.stringify(donationData));
         sessionStorage.setItem('walletType', wallet);
@@ -172,22 +174,34 @@ const CampaignPreview = () => {
         // Get current URL for return
         const currentUrl = window.location.href;
 
-        // Create wallet-specific deep link
-        const deepLink = wallet === 'metamask'
-            ? `https://metamask.app.link/dapp/${currentUrl.replace(/^https?:\/\//, '')}`
-            : `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(currentUrl)}`;
+        if (wallet === 'trust') {
+            // For Trust Wallet, create a direct ethereum payment URL
+            const value = ethers.utils.parseEther(donationData.amount).toHexString();
+            const trustWalletDeepLink = `https://link.trustwallet.com/send?asset=c60&address=${
+                campaign.wallet_address
+            }&amount=${donationData.amount}&web3=true&callback_url=${
+                encodeURIComponent(currentUrl)
+            }`;
 
-        // For iOS, use window.location.href to ensure proper app switching
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-            window.location.href = deepLink;
+            // Use different approach for iOS vs Android
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                window.location.href = trustWalletDeepLink;
+            } else {
+                window.open(trustWalletDeepLink, '_blank');
+            }
         } else {
-            // For Android, open in new tab
-            window.open(deepLink, '_blank');
+            // MetaMask handling remains the same
+            const deepLink = `https://metamask.app.link/dapp/${currentUrl.replace(/^https?:\/\//, '')}`;
+
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                window.location.href = deepLink;
+            } else {
+                window.open(deepLink, '_blank');
+            }
         }
 
         setWalletModalOpen(false);
     };
-
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
