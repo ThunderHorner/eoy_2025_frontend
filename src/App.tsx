@@ -1,26 +1,41 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import CampaignList from './pages/CampaignList';
 import CampaignDetail from './pages/CampaignDetail';
 import Layout from './components/Layout';
-import './App.css'
-import Dashboard from "./pages/Dashboard.tsx";
-import CampaignPreview from "./pages/CampaignPreview.tsx";
+import Dashboard from "./pages/Dashboard";
+import CampaignPreview from "./pages/CampaignPreview";
+import './App.css';
+
 const App: React.FC = () => {
+    const isAuthenticated = localStorage.getItem('access') !== null;
+
     return (
         <Router>
             <Layout>
                 <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/campaign/:id" element={<CampaignPreview />} /> {/* Dynamic route for campaign preview */}
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/login" element={<Login />} />
+                    <Route
+                        path="/"
+                        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Home />}
+                    />
+                    <Route
+                        path="/login"
+                        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+                    />
+                    <Route
+                        path="/register"
+                        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />}
+                    />
+                    <Route
+                        path="/dashboard"
+                        element={!isAuthenticated ? <Navigate to="/login" /> : <Dashboard />}
+                    />
+                    <Route path="/campaign/:id" element={<CampaignPreview />} />
                     <Route path="/campaigns" element={<CampaignList />} />
-                    <Route path="/campaigns/:id" element={<CampaignDetail />} /> {/* Dynamic Route */}
+                    <Route path="/campaigns/:id" element={<CampaignDetail />} />
                 </Routes>
             </Layout>
         </Router>
