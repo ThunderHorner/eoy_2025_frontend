@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5174
 
 # Start the Vite development server with host exposed
-CMD ["npm", "run", "dev", "--", "--host"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
