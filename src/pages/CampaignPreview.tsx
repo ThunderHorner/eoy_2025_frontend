@@ -46,11 +46,16 @@ const CampaignPreview = () => {
             setLoading(false);
         }
     };
-
     useEffect(() => {
         loadData();
-    }, [id]);
+        // Set up polling interval
+        const interval = setInterval(() => {
+            fetchDonations(id!).then(setDonations);
+        }, 5000);
 
+        // Cleanup interval on component unmount
+        return () => clearInterval(interval);
+    }, [id]);
     const handleCloseModal = () => {
         setDonationModalOpen(false);
         setDonationData({
@@ -134,7 +139,7 @@ const CampaignPreview = () => {
                 variant="contained"
                 color="primary"
                 onClick={() => setDonationModalOpen(true)}
-                sx={{ mb: 2 }}
+                sx={{mb: 2, display: 'block', mx: 'auto'}}
             >
                 Donate to this Campaign
             </Button>

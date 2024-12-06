@@ -1,7 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import Home from './pages/Home';
-import Register from './pages/Register';
 import Login from './pages/Login';
 import CampaignList from './pages/CampaignList';
 import CampaignDetail from './pages/CampaignDetail';
@@ -19,10 +17,6 @@ const App: React.FC = () => {
             <Layout>
                 <Routes>
                     <Route
-                        path="/"
-                        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Home />}
-                    />
-                    <Route
                         path="/login"
                         element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
                     />
@@ -31,11 +25,11 @@ const App: React.FC = () => {
                         element={isAuthenticated ? <Navigate to="/dashboard" /> : <StreamlabsAuth />}
                     />
                     <Route
-                        path="/register"
-                        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />}
+                        path="/dashboard"
+                        element={!isAuthenticated ? <Navigate to="/login" /> : <Dashboard />}
                     />
                     <Route
-                        path="/dashboard"
+                        path="/"
                         element={!isAuthenticated ? <Navigate to="/login" /> : <Dashboard />}
                     />
                     <Route path="/campaign/:id" element={<CampaignPreview />} />

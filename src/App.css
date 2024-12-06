@@ -1,12 +1,18 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  /*padding: 2rem;*/
-  text-align: center;
-}
+/*#root {*/
+/*  max-width: 1280px;*/
+/*  margin: 0 auto;*/
+/*  padding: 2rem;*/
+  /*text-align: center;*/
+/*}*/
 
 
 
 body{
   margin: 0;
+}
+
+.create-campaign-button {
+  position: absolute;
+  bottom: 2.8rem;
+  right: 0.8rem;
 }

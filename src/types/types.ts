@@ -38,6 +38,7 @@ export interface Donation {
     currency: Currency;
     created_at: string;
     tx_hash?: string;
+    amount_usd?:string;
 }
 
 export interface Campaign {

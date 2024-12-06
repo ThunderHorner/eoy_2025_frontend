@@ -91,22 +91,30 @@ const Dashboard: React.FC = () => {
 
     return (
         <Box padding={4}>
-            <Typography variant="h4" gutterBottom>
-                Dashboard
-            </Typography>
-            <Box display="flex" justifyContent="space-between" alignItems="center" marginBottom={3}>
-                <Typography variant="h6">My Campaigns</Typography>
-                <Button variant="contained" color="primary" onClick={handleOpen}>
-                    Create Campaign
+            <Box display="flex" className={"create-campaign-button"} justifyContent="space-between" alignItems="center" marginBottom={3}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpen}
+                    sx={{
+                        borderRadius: '50%',
+                        minWidth: '60px',
+                        width: '60px',
+                        height: '60px',
+                        fontSize: '1.5rem',
+                        padding: 0
+                    }}
+                >
+                    +
                 </Button>
             </Box>
             <Grid container spacing={3}>
                 {campaigns.map((campaign) => (
-                    <Grid item xs={12} sm={6} md={6} key={campaign.id}>
+                    <Grid item xs={12} sm={12} md={6} xl={4} key={campaign.id}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6">{campaign.title}</Typography>
-                                <Typography variant="small">{campaign.wallet_address}</Typography>
+                                <Typography variant="body2">{campaign.wallet_address}</Typography>
                                 <Typography variant="body2" color="textSecondary">
                                     {campaign.description}
                                 </Typography>
