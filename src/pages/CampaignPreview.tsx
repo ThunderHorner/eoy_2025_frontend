@@ -69,6 +69,25 @@ const CampaignPreview = () => {
         return () => clearInterval(interval);
     }, [id]);
 
+    // Handle return from wallet redirect
+    useEffect(() => {
+        // Check if we're returning from a wallet redirect
+        const isWalletReturn = sessionStorage.getItem('walletRedirect') === 'true';
+        if (isWalletReturn) {
+            // Clear the redirect flag
+            sessionStorage.removeItem('walletRedirect');
+
+            // Try to retrieve pending donation
+            const pendingDonation = sessionStorage.getItem('pendingDonation');
+            if (pendingDonation) {
+                setDonationData(JSON.parse(pendingDonation));
+                sessionStorage.removeItem('pendingDonation');
+                // Reopen donation modal
+                setDonationModalOpen(true);
+            }
+        }
+    }, []);
+
     const showSnackbar = (message: string) => {
         setSnackbarMessage(message);
         setSnackbarOpen(true);
@@ -107,8 +126,11 @@ const CampaignPreview = () => {
         try {
             setPaymentStatus('processing');
 
-            // Check if running in a dApp browser
-            const isDAppBrowser = window.ethereum && window.ethereum.isMetaMask;
+            // Clear any existing wallet session
+            sessionStorage.removeItem('walletRedirect');
+
+            // Check if we're inside a dApp browser (like Trust Wallet's browser)
+            const isDAppBrowser = window.ethereum || (window as any).trustwallet;
 
             if (isDAppBrowser) {
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -126,7 +148,8 @@ const CampaignPreview = () => {
                 setPaymentStatus('success');
                 showSnackbar('Donation successful!');
             } else {
-                // Handle mobile wallet deep linking
+                // Save donation data before redirect
+                sessionStorage.setItem('pendingDonation', JSON.stringify(donationData));
                 setWalletModalOpen(true);
                 setDonationModalOpen(false);
             }
@@ -140,12 +163,17 @@ const CampaignPreview = () => {
     };
 
     const handleMobileWalletSelection = (wallet: 'metamask' | 'trust') => {
-        const currentUrl = encodeURIComponent(window.location.href);
-        const deepLink = wallet === 'metamask'
-            ? `https://metamask.app.link/dapp/${currentUrl}`
-            : `https://link.trustwallet.com/open_url?coin_id=60&url=${currentUrl}`;
+        // Mark that we're doing a wallet redirect to prevent loops
+        sessionStorage.setItem('walletRedirect', 'true');
 
-        // For iOS, we need to use window.location.href instead of window.open
+        // Get base URL without query parameters
+        const baseUrl = window.location.origin + window.location.pathname;
+
+        const deepLink = wallet === 'metamask'
+            ? `https://metamask.app.link/dapp/${encodeURIComponent(baseUrl)}`
+            : `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(baseUrl)}`;
+
+        // For iOS, we need to use window.location.href
         if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
             window.location.href = deepLink;
         } else {
@@ -240,7 +268,7 @@ const CampaignPreview = () => {
                 onClose={handleCloseModal}
                 onDonate={handlePayment}
                 formData={donationData}
-                onChange={(e) => setDonationData(prev => ({
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDonationData(prev => ({
                     ...prev,
                     [e.target.name]: e.target.value
                 }))}
