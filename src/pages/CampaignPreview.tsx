@@ -9,11 +9,15 @@ import {
     Button,
     CircularProgress
 } from '@mui/material';
-import {Campaign, Currency, Donation} from "../types/types.ts";
-import {fetchCampaign, fetchDonations, recordDonation} from "../services/ApiService.ts";
-import {processPayment} from "../services/PaymentService.ts";
+import { Campaign, Currency, Donation } from "../types/types.ts";
+import { fetchCampaign, fetchDonations, recordDonation } from "../services/ApiService.ts";
+import { processPayment } from "../services/PaymentService.ts";
 import DonationList from "../components/DonationList.tsx";
 import DonationModal from "../components/DonationModal.tsx";
+
+const isMobileDevice = () => {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+};
 
 const CampaignPreview = () => {
     const { id } = useParams<{ id: string }>();
@@ -46,16 +50,16 @@ const CampaignPreview = () => {
             setLoading(false);
         }
     };
+
     useEffect(() => {
         loadData();
-        // Set up polling interval
         const interval = setInterval(() => {
             fetchDonations(id!).then(setDonations);
         }, 5000);
 
-        // Cleanup interval on component unmount
         return () => clearInterval(interval);
     }, [id]);
+
     const handleCloseModal = () => {
         setDonationModalOpen(false);
         setDonationData({
@@ -77,23 +81,36 @@ const CampaignPreview = () => {
     };
 
     const handlePayment = async () => {
-        if (!window.ethereum || !campaign) return;
+        if (!campaign) return;
 
         try {
             setPaymentStatus('processing');
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
 
-            const tx = await processPayment(
-                campaign.wallet_address,
-                donationData.amount,
-                selectedCurrency,
-                provider
-            );
+            if (window.ethereum) {
+                // Use Ethereum provider for desktop or supported mobile wallets
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
 
-            setDonationData(prev => ({ ...prev, tx_hash: tx.hash }));
-            setPaymentStatus('success');
-            await recordDonation(id!, { ...donationData, tx_hash: tx.hash, currency: selectedCurrency });
+                const tx = await processPayment(
+                    campaign.wallet_address,
+                    donationData.amount,
+                    selectedCurrency,
+                    provider
+                );
+
+                setDonationData(prev => ({ ...prev, tx_hash: tx.hash }));
+                setPaymentStatus('success');
+                await recordDonation(id!, { ...donationData, tx_hash: tx.hash, currency: selectedCurrency });
+            } else if (isMobileDevice()) {
+                // Deep link to Trust Wallet or MetaMask mobile app
+                const deepLinkUrl = `https://metamask.app.link/dapp/${window.location.href}`;
+                window.open(deepLinkUrl, '_blank');
+                setPaymentStatus('idle');
+            } else {
+                // Fallback for unsupported environments
+                alert('No wallet detected. Please install MetaMask or Trust Wallet.');
+                setPaymentStatus('error');
+            }
 
             await loadData();
             handleCloseModal();
@@ -139,7 +156,7 @@ const CampaignPreview = () => {
                 variant="contained"
                 color="primary"
                 onClick={() => setDonationModalOpen(true)}
-                sx={{mb: 2, display: 'block', mx: 'auto'}}
+                sx={{ mb: 2, display: 'block', mx: 'auto' }}
             >
                 Donate to this Campaign
             </Button>
