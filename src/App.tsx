@@ -9,9 +9,10 @@ import Layout from './components/Layout';
 import Dashboard from "./pages/Dashboard";
 import CampaignPreview from "./pages/CampaignPreview";
 import './App.css';
+import StreamlabsAuth from "./pages/StreamlabsAuth.tsx";
 
 const App: React.FC = () => {
-    const isAuthenticated = localStorage.getItem('access') !== null;
+    const isAuthenticated = localStorage.getItem('accessToken') !== null;
 
     return (
         <Router>
@@ -24,6 +25,10 @@ const App: React.FC = () => {
                     <Route
                         path="/login"
                         element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+                    />
+                    <Route
+                        path="/auth"
+                        element={isAuthenticated ? <Navigate to="/dashboard" /> : <StreamlabsAuth />}
                     />
                     <Route
                         path="/register"
