@@ -19,7 +19,7 @@ const StreamlabsAuth = () => {
                 })
                 .then(data => {
                     // Store tokens and user data
-                    localStorage.setItem('accessToken', data.access);
+                    localStorage.setItem('access', data.access);
                     localStorage.setItem('refreshToken', data.refresh);
                     localStorage.setItem('userData', JSON.stringify(data.user));
 

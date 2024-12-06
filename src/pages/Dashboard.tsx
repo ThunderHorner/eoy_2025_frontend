@@ -33,7 +33,6 @@ const Dashboard: React.FC = () => {
         description: '',
         goal: '',
         wallet_address: '',
-        streamlabs_token: ''
     });
     const navigate = useNavigate();
 
@@ -59,7 +58,7 @@ const Dashboard: React.FC = () => {
     const handleOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
-        setNewCampaign({ title: '', description: '', goal: '', wallet_address: '', streamlabs_token:'' });
+        setNewCampaign({ title: '', description: '', goal: '', wallet_address: ''});
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +75,6 @@ const Dashboard: React.FC = () => {
                     description: newCampaign.description,
                     goal: parseFloat(newCampaign.goal),
                     wallet_address: newCampaign.wallet_address,
-                    streamlabs_token: newCampaign.streamlabs_token,
                 },
                 {
                     headers: {
@@ -170,15 +168,7 @@ const Dashboard: React.FC = () => {
                         fullWidth
                         margin="normal"
                     />
-                    <TextField
-                        label="Streamlabs token"
-                        name="streamlabs_token"
-                        type="string"
-                        value={newCampaign.streamlabs_token}
-                        onChange={handleChange}
-                        fullWidth
-                        margin="normal"
-                    />
+
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose} color="secondary">

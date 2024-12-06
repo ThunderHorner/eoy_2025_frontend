@@ -12,7 +12,7 @@ import './App.css';
 import StreamlabsAuth from "./pages/StreamlabsAuth.tsx";
 
 const App: React.FC = () => {
-    const isAuthenticated = localStorage.getItem('accessToken') !== null;
+    const isAuthenticated = localStorage.getItem('access') !== null;
 
     return (
         <Router>
