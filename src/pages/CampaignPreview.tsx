@@ -166,55 +166,54 @@ const CampaignPreview = () => {
     };
 
     useEffect(() => {
-        const handleTrustWalletCallback = async () => {
-            const txId = searchParams.get('txId');
-            const pendingTxId = sessionStorage.getItem('pendingTxId');
-            const pendingDonation = sessionStorage.getItem('pendingDonation');
-            const walletType = sessionStorage.getItem('walletType');
+        const handleConfirmationPage = async () => {
+            const pathParts = window.location.pathname.split('/');
+            if (pathParts[pathParts.length - 1] === 'confirmation') {
+                const params = new URLSearchParams(window.location.search);
+                const amount = params.get('amount');
+                const address = params.get('address');
 
-            // Only proceed if we have a matching transaction ID
-            if (walletType === 'trust' && pendingDonation && txId && txId === pendingTxId) {
-                const parsedDonation = JSON.parse(pendingDonation);
+                if (amount && address) {
+                    try {
+                        const provider = new ethers.providers.Web3Provider(window.ethereum);
+                        const accounts = await provider.listAccounts();
 
-                try {
-                    // Get the latest transaction from the user's wallet
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const accounts = await provider.listAccounts();
+                        if (accounts.length > 0) {
+                            const history = await provider.getHistory(accounts[0]);
+                            const recentTx = history[0]; // Most recent transaction
 
-                    if (accounts.length > 0) {
-                        const history = await provider.getHistory(accounts[0]);
-                        const latestTx = history[0]; // Get the most recent transaction
+                            if (recentTx &&
+                                recentTx.to?.toLowerCase() === address.toLowerCase() &&
+                                ethers.utils.formatEther(recentTx.value) === amount) {
 
-                        if (latestTx) {
-                            // Record the successful donation with the actual transaction hash
-                            await recordDonation(id!, {
-                                ...parsedDonation,
-                                tx_hash: latestTx.hash,
-                                currency: selectedCurrency
-                            });
-                            setPaymentStatus('success');
-                            showSnackbar('Donation successful!');
-                            await loadData();
-                        } else {
-                            throw new Error('No transaction found');
+                                const pendingDonation = sessionStorage.getItem('pendingDonation');
+                                if (pendingDonation) {
+                                    const parsedDonation = JSON.parse(pendingDonation);
+
+                                    await recordDonation(id!, {
+                                        ...parsedDonation,
+                                        tx_hash: recentTx.hash,
+                                        currency: selectedCurrency
+                                    });
+
+                                    // Clear storage
+                                    sessionStorage.removeItem('walletType');
+                                    sessionStorage.removeItem('pendingDonation');
+
+                                    // Redirect back to campaign page
+                                    window.location.href = currentUrl;
+                                }
+                            }
                         }
+                    } catch (error) {
+                        console.error('Confirmation page error:', error);
                     }
-                } catch (err) {
-                    console.error('Failed to process donation:', err);
-                    setPaymentStatus('error');
-                    showSnackbar('Failed to process donation. Please check your wallet for the transaction status.');
                 }
-
-                // Clear storage
-                sessionStorage.removeItem('walletType');
-                sessionStorage.removeItem('pendingDonation');
-                sessionStorage.removeItem('pendingTxId');
             }
         };
 
-        handleTrustWalletCallback();
-    }, [searchParams, id, selectedCurrency]);
-// Update your handleMobileWalletSelection function
+        handleConfirmationPage();
+    }, [id, selectedCurrency]);
     const handleMobileWalletSelection = async (wallet: 'metamask' | 'trust') => {
         if (!campaign) return;
 
@@ -222,26 +221,26 @@ const CampaignPreview = () => {
         sessionStorage.setItem('pendingDonation', JSON.stringify(donationData));
         sessionStorage.setItem('walletType', wallet);
 
-        // Get current URL for return, ensuring we have a clean base URL
+        // Get current URL for return
         const currentUrl = window.location.href.split('?')[0];
 
         if (wallet === 'trust') {
-            // Create a unique transaction identifier
-            const txId = `tx-${Date.now()}`;
-            sessionStorage.setItem('pendingTxId', txId);
+            // Create the confirmation URL that will be loaded in Trust's internal browser
+            const confirmationUrl = `${currentUrl}/confirmation?amount=${donationData.amount}&address=${campaign.wallet_address}`;
 
-            // Construct callback URL with transaction ID
-            const callbackUrl = `${currentUrl}?txId=${txId}`;
-
-            // Construct Trust Wallet deep link with modified callback parameters
+            // Construct Trust Wallet deep link with the confirmation URL as the post-transaction destination
             const trustWalletDeepLink = `https://link.trustwallet.com/send?asset=c60&address=${
                 campaign.wallet_address
-            }&amount=${donationData.amount}&return_type=back&callback_url=${
-                encodeURIComponent(callbackUrl)
+            }&amount=${donationData.amount}&browser_url=${
+                encodeURIComponent(confirmationUrl)
             }`;
 
             // Open the deep link
-            window.location.href = trustWalletDeepLink;
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                window.location.href = trustWalletDeepLink;
+            } else {
+                window.open(trustWalletDeepLink, '_blank');
+            }
         } else {
             // MetaMask handling remains the same
             const deepLink = `https://metamask.app.link/dapp/${currentUrl.replace(/^https?:\/\//, '')}`;
