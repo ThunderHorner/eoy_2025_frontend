@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Box, Typography, Card, CardContent } from '@mui/material';
 import axios from 'axios';
 import { Campaign } from '../types/campaign';
-
+const backendHostname = import.meta.env.VITE_BACKEND_HOSTNAME;
 const CampaignDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>(); // Get the campaign ID from the route
     const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -11,7 +11,7 @@ const CampaignDetail: React.FC = () => {
     useEffect(() => {
         const fetchCampaign = async () => {
             try {
-                const response = await axios.get<Campaign>(`http://localhost:8000/api/v1/donation/campaigns/${id}/`);
+                const response = await axios.get<Campaign>(`${backendHostname}/api/v1/donation/campaigns/${id}/`);
                 setCampaign(response.data);
             } catch (error) {
                 console.error('Error fetching campaign:', error);

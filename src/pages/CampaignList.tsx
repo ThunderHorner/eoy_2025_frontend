@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Card, CardContent, Grid } from '@mui/material';
 import axios from 'axios';
 import { Campaign } from '../types/campaign';
-
+const backendHostname = import.meta.env.VITE_BACKEND_HOSTNAME;
 const CampaignList: React.FC = () => {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
     useEffect(() => {
         const fetchCampaigns = async () => {
             try {
-                const response = await axios.get<Campaign[]>('http://localhost:8000/donation/campaigns/');
+                const response = await axios.get<Campaign[]>(`${backendHostname}/donation/campaigns/`);
                 setCampaigns(response.data);
             } catch (error) {
                 console.error(error);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CircularProgress, Box, Alert, Container } from '@mui/material';
-
+const backendHostname = import.meta.env.VITE_BACKEND_HOSTNAME;
 const StreamlabsAuth = () => {
     const [error, setError] = useState(null);
 
@@ -8,7 +8,7 @@ const StreamlabsAuth = () => {
         const code = new URLSearchParams(window.location.search).get('code');
 
         if (code) {
-            fetch('http://localhost:8000/api/v1/users/streamlabs-auth/', {
+            fetch(`${backendHostname}/api/v1/users/streamlabs-auth/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code })

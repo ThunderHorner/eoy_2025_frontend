@@ -1,7 +1,9 @@
 import axios from 'axios';
 // import { Campaign, Donation } from './types';
 import {Campaign, Donation} from '../types/types.ts';
-const BASE_URL = 'http://localhost:8000/api/v1/donation';
+const backendHostname = import.meta.env.VITE_BACKEND_HOSTNAME;
+
+const BASE_URL = `${backendHostname}/api/v1/donation`;
 
 export const getHeaders = () => {
     const token = localStorage.getItem('access');

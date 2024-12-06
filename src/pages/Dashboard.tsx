@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
+const backendHostname = import.meta.env.VITE_BACKEND_HOSTNAME;
 interface Campaign {
     id: number;
     title: string;
@@ -40,7 +40,7 @@ const Dashboard: React.FC = () => {
         const fetchCampaigns = async () => {
             try {
                 const token = localStorage.getItem('access');
-                const response = await axios.get<Campaign[]>('http://localhost:8000/api/v1/donation/campaigns/', {
+                const response = await axios.get<Campaign[]>(`${backendHostname}/api/v1/donation/campaigns/`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
         try {
             const token = localStorage.getItem('access');
             const response = await axios.post(
-                'http://localhost:8000/api/v1/donation/campaigns/',
+                `${backendHostname}/api/v1/donation/campaigns/`,
                 {
                     title: newCampaign.title,
                     description: newCampaign.description,
