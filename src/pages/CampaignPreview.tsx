@@ -25,6 +25,7 @@ const CampaignPreview = () => {
     const { id } = useParams<{ id: string }>();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [searchParams] = useState(new URLSearchParams(window.location.search));
 
     const [campaign, setCampaign] = useState<Campaign | null>(null);
     const [donations, setDonations] = useState<Donation[]>([]);
@@ -164,6 +165,47 @@ const CampaignPreview = () => {
         }
     };
 
+    useEffect(() => {
+        const handleTrustWalletCallback = async () => {
+            const txHash = searchParams.get('transactionHash');
+            const error = searchParams.get('error');
+            const pendingDonation = sessionStorage.getItem('pendingDonation');
+            const walletType = sessionStorage.getItem('walletType');
+
+            if (walletType === 'trust' && pendingDonation) {
+                const parsedDonation = JSON.parse(pendingDonation);
+
+                if (txHash) {
+                    try {
+                        // Record the successful donation
+                        await recordDonation(id!, {
+                            ...parsedDonation,
+                            tx_hash: txHash,
+                            currency: selectedCurrency
+                        });
+                        setPaymentStatus('success');
+                        showSnackbar('Donation successful!');
+                        await loadData();
+                    } catch (err) {
+                        console.error('Failed to record donation:', err);
+                        setPaymentStatus('error');
+                        showSnackbar('Failed to record donation. Please contact support.');
+                    }
+                } else if (error) {
+                    setPaymentStatus('error');
+                    showSnackbar('Transaction failed: ' + error);
+                }
+
+                // Clear storage
+                sessionStorage.removeItem('walletType');
+                sessionStorage.removeItem('pendingDonation');
+            }
+        };
+
+        handleTrustWalletCallback();
+    }, [searchParams, id, selectedCurrency]);
+
+// Update your handleMobileWalletSelection function
     const handleMobileWalletSelection = async (wallet: 'metamask' | 'trust') => {
         if (!campaign) return;
 
@@ -172,16 +214,15 @@ const CampaignPreview = () => {
         sessionStorage.setItem('walletType', wallet);
 
         // Get current URL for return
-        const currentUrl = window.location.href;
+        const currentUrl = window.location.href.split('?')[0]; // Remove any existing query parameters
 
         if (wallet === 'trust') {
             // For Trust Wallet, create a direct ethereum payment URL
-            const value = ethers.utils.parseEther(donationData.amount).toHexString();
             const trustWalletDeepLink = `https://link.trustwallet.com/send?asset=c60&address=${
                 campaign.wallet_address
-            }&amount=${donationData.amount}&web3=true&callback_url=${
+            }&amount=${donationData.amount}&return_type=back&callback_url=${
                 encodeURIComponent(currentUrl)
-            }`;
+            }&callback_parameters=transactionHash,error`;
 
             // Use different approach for iOS vs Android
             if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
