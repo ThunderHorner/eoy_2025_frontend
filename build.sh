@@ -21,6 +21,6 @@ docker build -t ${DOCKER_IMAGE} .
 
 # Run the container
 echo "Running the container: ${CONTAINER_NAME}"
-docker run -d -p ${APP_PORT}:3000 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}
+docker run -d -p ${APP_PORT}:5174 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}
 
 echo "Deployment complete. Frontend is running on port ${APP_PORT}."
