@@ -25,6 +25,7 @@ interface Campaign {
 }
 
 const Dashboard: React.FC = () => {
+
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [open, setOpen] = useState(false);
     const [newCampaign, setNewCampaign] = useState({
@@ -32,6 +33,7 @@ const Dashboard: React.FC = () => {
         description: '',
         goal: '',
         wallet_address: '',
+        streamlabs_token: ''
     });
     const navigate = useNavigate();
 
@@ -50,13 +52,14 @@ const Dashboard: React.FC = () => {
             }
         };
 
+
         fetchCampaigns();
     }, []);
 
     const handleOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
-        setNewCampaign({ title: '', description: '', goal: '', wallet_address: '' });
+        setNewCampaign({ title: '', description: '', goal: '', wallet_address: '', streamlabs_token:'' });
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +76,7 @@ const Dashboard: React.FC = () => {
                     description: newCampaign.description,
                     goal: parseFloat(newCampaign.goal),
                     wallet_address: newCampaign.wallet_address,
+                    streamlabs_token: newCampaign.streamlabs_token,
                 },
                 {
                     headers: {
@@ -162,6 +166,15 @@ const Dashboard: React.FC = () => {
                         name="wallet_address"
                         type="string"
                         value={newCampaign.wallet_address.startsWith('0x') ? newCampaign.wallet_address : `0x${newCampaign.wallet_address}`}
+                        onChange={handleChange}
+                        fullWidth
+                        margin="normal"
+                    />
+                    <TextField
+                        label="Streamlabs token"
+                        name="streamlabs_token"
+                        type="string"
+                        value={newCampaign.streamlabs_token}
                         onChange={handleChange}
                         fullWidth
                         margin="normal"
