@@ -3,7 +3,7 @@ import { Box, Button, Typography } from '@mui/material';
 
 const Login: React.FC = () => {
     const handleStreamlabsLogin = () => {
-        window.location.href = 'https://streamlabs.com/api/v2.0/authorize?client_id=9da76297-69c2-4331-91df-1ceb46b95ea9&redirect_uri=https://3a795c30ad8b.ngrok.app/auth&response_type=code&scope=donations.create%20donations.read%20alerts.create%20legacy.token%20socket.token%20points.read%20points.write%20alerts.write%20credits.write%20profiles.write%20jar.write%20wheel.write%20mediashare.control';
+        window.location.href = 'https://streamlabs.com/api/v2.0/authorize?client_id=9da76297-69c2-4331-91df-1ceb46b95ea9&redirect_uri=https://cryptotip.elunesoft.com/auth&response_type=code&scope=donations.create%20donations.read%20alerts.create%20legacy.token%20socket.token%20points.read%20points.write%20alerts.write%20credits.write%20profiles.write%20jar.write%20wheel.write%20mediashare.control';
     };
 
     return (
