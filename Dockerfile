@@ -16,5 +16,5 @@ COPY . .
 # Expose the port your app will run on
 EXPOSE 5174
 
-# Start the application
-CMD ["npm", "run", "dev"]
+# Start the Vite development server with host exposed
+CMD ["npm", "run", "dev", "--", "--host"]
