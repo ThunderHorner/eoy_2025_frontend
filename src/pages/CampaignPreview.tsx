@@ -7,51 +7,13 @@ import {
     Divider,
     Link as MuiLink,
     Button,
-    CircularProgress,
-    Alert,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemText,
-    ListItemIcon
+    CircularProgress
 } from '@mui/material';
-import { Wallet } from 'lucide-react';
 import {Campaign, Currency, Donation} from "../types/types.ts";
 import {fetchCampaign, fetchDonations, recordDonation} from "../services/ApiService.ts";
 import {processPayment} from "../services/PaymentService.ts";
 import DonationList from "../components/DonationList.tsx";
 import DonationModal from "../components/DonationModal.tsx";
-
-interface WalletOption {
-    name: string;
-    mobile: {
-        android: string;
-        ios: string;
-    };
-    downloadUrl: string;
-}
-
-const WALLET_OPTIONS: Record<string, WalletOption> = {
-    metamask: {
-        name: 'MetaMask',
-        mobile: {
-            android: 'https://metamask.app.link/dapp/',
-            ios: 'https://metamask.app.link/dapp/'
-        },
-        downloadUrl: 'https://metamask.io/download/'
-    },
-    trust: {
-        name: 'Trust Wallet',
-        mobile: {
-            android: 'https://link.trustwallet.com/open_url?url=',
-            ios: 'https://link.trustwallet.com/open_url?url='
-        },
-        downloadUrl: 'https://trustwallet.com/download'
-    }
-};
 
 const CampaignPreview = () => {
     const { id } = useParams<{ id: string }>();
@@ -60,9 +22,7 @@ const CampaignPreview = () => {
     const [loading, setLoading] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
     const [donationModalOpen, setDonationModalOpen] = useState(false);
-    const [walletSelectorOpen, setWalletSelectorOpen] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState<Currency>(Currency.ETH);
-    const [walletError, setWalletError] = useState<string | null>(null);
     const [donationData, setDonationData] = useState({
         name: '',
         message: '',
@@ -86,50 +46,16 @@ const CampaignPreview = () => {
             setLoading(false);
         }
     };
-
     useEffect(() => {
         loadData();
+        // Set up polling interval
         const interval = setInterval(() => {
             fetchDonations(id!).then(setDonations);
         }, 5000);
+
+        // Cleanup interval on component unmount
         return () => clearInterval(interval);
     }, [id]);
-
-    const handleWalletSelect = async (walletKey: string) => {
-        setWalletSelectorOpen(false);
-        setWalletError(null);
-
-        const wallet = WALLET_OPTIONS[walletKey];
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const dappUrl = `${window.location.host}/campaign/${id}`;
-
-        if (isMobile) {
-            const platform = /iPhone|iPad|iPod/.test(navigator.userAgent) ? 'ios' : 'android';
-            const deepLink = `${wallet.mobile[platform]}${dappUrl}`;
-            window.location.href = deepLink;
-            return;
-        }
-
-        // Desktop flow
-        if (typeof window.ethereum === 'undefined') {
-            window.open(wallet.downloadUrl, '_blank');
-            setWalletError(`Please install ${wallet.name} to continue`);
-            return;
-        }
-
-        try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            setDonationModalOpen(true);
-        } catch (err) {
-            console.error('Error connecting wallet:', err);
-            setWalletError(`Failed to connect to ${wallet.name}. Please try again.`);
-        }
-    };
-
-    const handleOpenDonationModal = () => {
-        setWalletSelectorOpen(true);
-    };
-
     const handleCloseModal = () => {
         setDonationModalOpen(false);
         setDonationData({
@@ -151,13 +77,11 @@ const CampaignPreview = () => {
     };
 
     const handlePayment = async () => {
-        if (!window.ethereum || !campaign) {
-            setWalletError('Wallet connection required. Please connect your wallet first.');
-            return;
-        }
+        if (!window.ethereum || !campaign) return;
 
         try {
             setPaymentStatus('processing');
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
             const provider = new ethers.providers.Web3Provider(window.ethereum);
 
             const tx = await processPayment(
@@ -204,12 +128,6 @@ const CampaignPreview = () => {
 
             <Divider sx={{ my: 2 }} />
 
-            {walletError && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {walletError}
-                </Alert>
-            )}
-
             <Typography variant="h6">Share this Campaign:</Typography>
             <MuiLink href={shareLink} target="_blank" rel="noopener">
                 {shareLink}
@@ -220,7 +138,7 @@ const CampaignPreview = () => {
             <Button
                 variant="contained"
                 color="primary"
-                onClick={handleOpenDonationModal}
+                onClick={() => setDonationModalOpen(true)}
                 sx={{mb: 2, display: 'block', mx: 'auto'}}
             >
                 Donate to this Campaign
@@ -231,28 +149,6 @@ const CampaignPreview = () => {
             </Typography>
 
             <DonationList donations={donations} />
-
-            {/* Wallet Selection Dialog */}
-            <Dialog
-                open={walletSelectorOpen}
-                onClose={() => setWalletSelectorOpen(false)}
-            >
-                <DialogTitle>Select a Wallet</DialogTitle>
-                <DialogContent>
-                    <List>
-                        {Object.entries(WALLET_OPTIONS).map(([key, wallet]) => (
-                            <ListItem key={key} disablePadding>
-                                <ListItemButton onClick={() => handleWalletSelect(key)}>
-                                    <ListItemIcon>
-                                        <Wallet />
-                                    </ListItemIcon>
-                                    <ListItemText primary={wallet.name} />
-                                </ListItemButton>
-                            </ListItem>
-                        ))}
-                    </List>
-                </DialogContent>
-            </Dialog>
 
             <DonationModal
                 open={donationModalOpen}
