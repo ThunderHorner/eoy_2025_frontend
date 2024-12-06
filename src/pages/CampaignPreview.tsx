@@ -7,7 +7,8 @@ import {
     Divider,
     Link as MuiLink,
     Button,
-    CircularProgress
+    CircularProgress,
+    Modal,
 } from '@mui/material';
 import { Campaign, Currency, Donation } from "../types/types.ts";
 import { fetchCampaign, fetchDonations, recordDonation } from "../services/ApiService.ts";
@@ -26,6 +27,7 @@ const CampaignPreview = () => {
     const [loading, setLoading] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
     const [donationModalOpen, setDonationModalOpen] = useState(false);
+    const [mobileWalletModalOpen, setMobileWalletModalOpen] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState<Currency>(Currency.ETH);
     const [donationData, setDonationData] = useState({
         name: '',
@@ -62,6 +64,7 @@ const CampaignPreview = () => {
 
     const handleCloseModal = () => {
         setDonationModalOpen(false);
+        setMobileWalletModalOpen(false);
         setDonationData({
             name: '',
             message: '',
@@ -102,10 +105,8 @@ const CampaignPreview = () => {
                 setPaymentStatus('success');
                 await recordDonation(id!, { ...donationData, tx_hash: tx.hash, currency: selectedCurrency });
             } else if (isMobileDevice()) {
-                // Deep link to Trust Wallet or MetaMask mobile app
-                const deepLinkUrl = `https://metamask.app.link/dapp/${window.location.href}`;
-                window.open(deepLinkUrl, '_blank');
-                setPaymentStatus('idle');
+                // Show wallet selection modal
+                setMobileWalletModalOpen(true);
             } else {
                 // Fallback for unsupported environments
                 alert('No wallet detected. Please install MetaMask or Trust Wallet.');
@@ -118,6 +119,15 @@ const CampaignPreview = () => {
             setPaymentStatus('error');
             console.error('Payment failed:', err);
         }
+    };
+
+    const handleMobileWalletSelection = (wallet: 'metamask' | 'trust') => {
+        const deepLinkUrl =
+            wallet === 'metamask'
+                ? `https://metamask.app.link/dapp/${window.location.href}`
+                : `https://link.trustwallet.com/open_url?coin_id=60&url=${window.location.href}`;
+        window.open(deepLinkUrl, '_blank');
+        setMobileWalletModalOpen(false);
     };
 
     if (loading) return <CircularProgress />;
@@ -180,6 +190,30 @@ const CampaignPreview = () => {
                     setDonationData(prev => ({ ...prev, currency }));
                 }}
             />
+
+            <Modal open={mobileWalletModalOpen} onClose={handleCloseModal}>
+                <Box sx={{ padding: 4, backgroundColor: 'white', borderRadius: 2, mx: 'auto', my: '20%' }}>
+                    <Typography variant="h6" gutterBottom>
+                        Select a Wallet
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => handleMobileWalletSelection('metamask')}
+                        sx={{ mb: 2, display: 'block', mx: 'auto' }}
+                    >
+                        Open MetaMask
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => handleMobileWalletSelection('trust')}
+                        sx={{ mb: 2, display: 'block', mx: 'auto' }}
+                    >
+                        Open Trust Wallet
+                    </Button>
+                </Box>
+            </Modal>
         </Box>
     );
 };
