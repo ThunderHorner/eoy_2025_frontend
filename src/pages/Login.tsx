@@ -23,19 +23,27 @@ const Login: React.FC = () => {
             }}
         >
             <Typography variant="h4" gutterBottom>
-                Welcome to Donation Platform
+                Welcome to CrytoTip
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                 Connect your Streamlabs account to start receiving donations and managing your campaigns.
             </Typography>
             <Button
                 variant="contained"
-                color="primary"
                 size="large"
                 onClick={handleStreamlabsLogin}
+                startIcon={<img src="/streamlabs_logo.png" alt="Streamlabs Logo" style={{  height: '2em' }} />}
+                sx={{
+                    backgroundColor: '#83f3d1',
+                    color: '#FFFFFF',
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                }}
             >
-                Login with Streamlabs
             </Button>
+
         </Box>
     );
 };
