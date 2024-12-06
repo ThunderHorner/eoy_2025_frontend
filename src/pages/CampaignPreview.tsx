@@ -9,25 +9,31 @@ import {
     Button,
     CircularProgress,
     Modal,
+    useMediaQuery,
+    useTheme,
+    IconButton,
+    Snackbar,
 } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { Campaign, Currency, Donation } from "../types/types.ts";
 import { fetchCampaign, fetchDonations, recordDonation } from "../services/ApiService.ts";
 import { processPayment } from "../services/PaymentService.ts";
 import DonationList from "../components/DonationList.tsx";
 import DonationModal from "../components/DonationModal.tsx";
 
-const isMobileDevice = () => {
-    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-};
-
 const CampaignPreview = () => {
     const { id } = useParams<{ id: string }>();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     const [campaign, setCampaign] = useState<Campaign | null>(null);
     const [donations, setDonations] = useState<Donation[]>([]);
     const [loading, setLoading] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
     const [donationModalOpen, setDonationModalOpen] = useState(false);
-    const [mobileWalletModalOpen, setMobileWalletModalOpen] = useState(false);
+    const [walletModalOpen, setWalletModalOpen] = useState(false);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
     const [selectedCurrency, setSelectedCurrency] = useState<Currency>(Currency.ETH);
     const [donationData, setDonationData] = useState({
         name: '',
@@ -48,6 +54,7 @@ const CampaignPreview = () => {
             setDonations(donationsData);
         } catch (error) {
             console.error('Error loading data:', error);
+            showSnackbar('Failed to load campaign data');
         } finally {
             setLoading(false);
         }
@@ -62,9 +69,18 @@ const CampaignPreview = () => {
         return () => clearInterval(interval);
     }, [id]);
 
+    const showSnackbar = (message: string) => {
+        setSnackbarMessage(message);
+        setSnackbarOpen(true);
+    };
+
     const handleCloseModal = () => {
         setDonationModalOpen(false);
-        setMobileWalletModalOpen(false);
+        setWalletModalOpen(false);
+        resetDonationData();
+    };
+
+    const resetDonationData = () => {
         setDonationData({
             name: '',
             message: '',
@@ -76,11 +92,13 @@ const CampaignPreview = () => {
         setPaymentStatus('idle');
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setDonationData(prev => ({
-            ...prev,
-            [e.target.name]: e.target.value
-        }));
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            showSnackbar('Copied to clipboard!');
+        } catch (err) {
+            showSnackbar('Failed to copy. Please try manually.');
+        }
     };
 
     const handlePayment = async () => {
@@ -89,8 +107,10 @@ const CampaignPreview = () => {
         try {
             setPaymentStatus('processing');
 
-            if (window.ethereum) {
-                // Use Ethereum provider for desktop or supported mobile wallets
+            // Check if running in a dApp browser
+            const isDAppBrowser = window.ethereum && window.ethereum.isMetaMask;
+
+            if (isDAppBrowser) {
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
@@ -102,77 +122,115 @@ const CampaignPreview = () => {
                 );
 
                 setDonationData(prev => ({ ...prev, tx_hash: tx.hash }));
-                setPaymentStatus('success');
                 await recordDonation(id!, { ...donationData, tx_hash: tx.hash, currency: selectedCurrency });
-            } else if (isMobileDevice()) {
-                // Show wallet selection modal
-                setMobileWalletModalOpen(true);
+                setPaymentStatus('success');
+                showSnackbar('Donation successful!');
             } else {
-                // Fallback for unsupported environments
-                alert('No wallet detected. Please install MetaMask or Trust Wallet.');
-                setPaymentStatus('error');
+                // Handle mobile wallet deep linking
+                setWalletModalOpen(true);
+                setDonationModalOpen(false);
             }
 
             await loadData();
-            handleCloseModal();
         } catch (err) {
-            setPaymentStatus('error');
             console.error('Payment failed:', err);
+            setPaymentStatus('error');
+            showSnackbar('Payment failed. Please try again.');
         }
     };
 
     const handleMobileWalletSelection = (wallet: 'metamask' | 'trust') => {
-        const deepLinkUrl =
-            wallet === 'metamask'
-                ? `https://metamask.app.link/dapp/${window.location.href}`
-                : `https://link.trustwallet.com/open_url?coin_id=60&url=${window.location.href}`;
-        window.open(deepLinkUrl, '_blank');
-        setMobileWalletModalOpen(false);
+        const currentUrl = encodeURIComponent(window.location.href);
+        const deepLink = wallet === 'metamask'
+            ? `https://metamask.app.link/dapp/${currentUrl}`
+            : `https://link.trustwallet.com/open_url?coin_id=60&url=${currentUrl}`;
+
+        // For iOS, we need to use window.location.href instead of window.open
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            window.location.href = deepLink;
+        } else {
+            window.open(deepLink, '_blank');
+        }
+        setWalletModalOpen(false);
     };
 
-    if (loading) return <CircularProgress />;
-    if (!campaign) return <Typography>Campaign not found.</Typography>;
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (!campaign) {
+        return (
+            <Box padding={3}>
+                <Typography>Campaign not found.</Typography>
+            </Box>
+        );
+    }
 
     const shareLink = `${window.location.origin}/campaign/${id}`;
 
     return (
-        <Box padding={4}>
+        <Box padding={isMobile ? 2 : 4}>
             <Typography variant="h4" gutterBottom>
                 {campaign.title}
             </Typography>
-            <Typography variant="subtitle2" gutterBottom>
-                {campaign.wallet_address}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
+
+            <Box display="flex" alignItems="center" gap={1} sx={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
+                <Typography variant="subtitle2" sx={{ fontSize: isMobile ? '0.7rem' : '0.875rem' }}>
+                    {campaign.wallet_address}
+                </Typography>
+                <IconButton size="small" onClick={() => copyToClipboard(campaign.wallet_address)}>
+                    <ContentCopyIcon fontSize="small" />
+                </IconButton>
+            </Box>
+
+            <Typography variant="body1" sx={{ mt: 2 }}>
                 {campaign.description}
             </Typography>
-            <Typography variant="body2" gutterBottom>
-                Goal: ${parseFloat(campaign.goal).toFixed(2)}
-            </Typography>
-            <Typography variant="body2" gutterBottom>
-                Collected: ${parseFloat(campaign.collected).toFixed(2)}
-            </Typography>
+
+            <Box sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                    Goal: ${parseFloat(campaign.goal).toFixed(2)}
+                </Typography>
+                <Typography variant="body2">
+                    Collected: ${parseFloat(campaign.collected).toFixed(2)}
+                </Typography>
+            </Box>
 
             <Divider sx={{ my: 2 }} />
 
-            <Typography variant="h6">Share this Campaign:</Typography>
-            <MuiLink href={shareLink} target="_blank" rel="noopener">
-                {shareLink}
-            </MuiLink>
-
-            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6">Share:</Typography>
+                <MuiLink
+                    href={shareLink}
+                    sx={{
+                        maxWidth: isMobile ? '200px' : 'none',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                    }}
+                >
+                    {shareLink}
+                </MuiLink>
+                <IconButton size="small" onClick={() => copyToClipboard(shareLink)}>
+                    <ContentCopyIcon fontSize="small" />
+                </IconButton>
+            </Box>
 
             <Button
                 variant="contained"
                 color="primary"
+                fullWidth={isMobile}
                 onClick={() => setDonationModalOpen(true)}
-                sx={{ mb: 2, display: 'block', mx: 'auto' }}
+                sx={{ my: 3 }}
             >
-                Donate to this Campaign
+                Donate Now
             </Button>
 
             <Typography variant="h6" gutterBottom>
-                Donations
+                Recent Donations
             </Typography>
 
             <DonationList donations={donations} />
@@ -182,7 +240,10 @@ const CampaignPreview = () => {
                 onClose={handleCloseModal}
                 onDonate={handlePayment}
                 formData={donationData}
-                onChange={handleInputChange}
+                onChange={(e) => setDonationData(prev => ({
+                    ...prev,
+                    [e.target.name]: e.target.value
+                }))}
                 status={paymentStatus}
                 selectedCurrency={selectedCurrency}
                 onCurrencyChange={(currency) => {
@@ -191,29 +252,50 @@ const CampaignPreview = () => {
                 }}
             />
 
-            <Modal open={mobileWalletModalOpen} onClose={handleCloseModal}>
-                <Box sx={{ padding: 4, backgroundColor: 'white', borderRadius: 2, mx: 'auto', my: '20%' }}>
+            <Modal
+                open={walletModalOpen}
+                onClose={handleCloseModal}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}
+            >
+                <Box sx={{
+                    bgcolor: 'background.paper',
+                    borderRadius: 2,
+                    p: 3,
+                    width: isMobile ? '90%' : '400px',
+                    maxWidth: '90vw'
+                }}>
                     <Typography variant="h6" gutterBottom>
-                        Select a Wallet
+                        Select Your Wallet
                     </Typography>
                     <Button
                         variant="contained"
-                        color="primary"
+                        fullWidth
                         onClick={() => handleMobileWalletSelection('metamask')}
-                        sx={{ mb: 2, display: 'block', mx: 'auto' }}
+                        sx={{ mb: 2 }}
                     >
-                        Open MetaMask
+                        MetaMask
                     </Button>
                     <Button
                         variant="contained"
-                        color="secondary"
+                        fullWidth
                         onClick={() => handleMobileWalletSelection('trust')}
-                        sx={{ mb: 2, display: 'block', mx: 'auto' }}
+                        color="secondary"
                     >
-                        Open Trust Wallet
+                        Trust Wallet
                     </Button>
                 </Box>
             </Modal>
+
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={6000}
+                onClose={() => setSnackbarOpen(false)}
+                message={snackbarMessage}
+            />
         </Box>
     );
 };
