@@ -12,7 +12,9 @@ RUN npm install --legacy-peer-deps
 
 # Copy the rest of the application files to the container
 COPY . .
-COPY .env .
+
+RUN echo 'VITE_BACKEND_HOSTNAME=https://cryptotip-backend.elunesoft.com' > .env
+
 
 # Expose the port your app will run on
 EXPOSE 5174
