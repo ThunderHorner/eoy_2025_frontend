@@ -34,8 +34,43 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {children}
             </Box>
 
-            <Box component="footer" bgcolor="#f5f5f5" padding={2} textAlign="center">
-                <Typography variant="body2">© 2024 CrytoTip. All rights reserved.</Typography>
+            <Box
+                component="footer"
+                sx={{
+                    bgcolor: '#f5f5f5',
+                    py: 3,
+                    px: 2,
+                    mt: 'auto',
+                    textAlign: 'center'
+                }}
+            >
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                    © 2024 CrytoTip. All rights reserved.
+                </Typography>
+                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                    <a
+                        href="https://request.network/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            textDecoration: 'none',
+                            color: 'inherit'
+                        }}
+                    >
+                        Powered by Request Network
+                        <img
+                            src="/request.png"
+                            alt="Request Network logo"
+                            style={{
+                                height: '20px',
+                                width: '20px'
+                            }}
+                        />
+                    </a>
+                </Typography>
             </Box>
         </Box>
     );
