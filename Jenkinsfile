@@ -7,7 +7,7 @@ pipeline {
         DOCKER_SERVER = 'thunderhorn@192.168.0.103'
         REMOTE_DIR = '/home/thunderhorn/crypto_tip_frontend'
         BUILD_DIR = '/home/thunderhorn/crypto_tip_frontend/dist'
-        HTML_OUTPUT_DIR = '/var/www/crypto_tip_frontend'
+        HTML_OUTPUT_DIR = '/home/thunderhorn/crypto_tip_frontend_deploy'
     }
 
     stages {
@@ -23,10 +23,12 @@ pipeline {
                 script {
                     sshagent(['15']) {
                         sh """
-                        # Connect to the server and prepare the deployment directory
+                        # Connect to the server and prepare the deployment directories
                         ssh -o StrictHostKeyChecking=no ${DOCKER_SERVER} '
                             rm -rf ${REMOTE_DIR} &&
-                            mkdir -p ${REMOTE_DIR}'
+                            mkdir -p ${REMOTE_DIR} &&
+                            rm -rf ${HTML_OUTPUT_DIR} &&
+                            mkdir -p ${HTML_OUTPUT_DIR}'
                         """
                     }
                 }
@@ -56,8 +58,6 @@ pipeline {
                             cd ${REMOTE_DIR} &&
                             npm install &&
                             npm run build &&
-                            rm -rf ${HTML_OUTPUT_DIR} &&
-                            mkdir -p ${HTML_OUTPUT_DIR} &&
                             cp -r ${BUILD_DIR}/* ${HTML_OUTPUT_DIR}/'
                         """
                     }
