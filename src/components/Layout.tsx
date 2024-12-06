@@ -3,7 +3,6 @@ import { AppBar, Toolbar, Typography, Box, Button } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
 import LogoutIcon from '@mui/icons-material/Logout';
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const navigate = useNavigate();
     const isAuthenticated = localStorage.getItem('access') !== null;
 
     const handleLogout = () => {

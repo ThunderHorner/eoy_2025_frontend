@@ -1,6 +1,6 @@
 import React from 'react';
 import { Grid, Card, CardContent, Typography, Box, Link } from '@mui/material';
-import { Donation, Currency } from "../types/types";
+import { Donation } from "../types/types";
 
 interface DonationListProps {
     donations: Donation[];
