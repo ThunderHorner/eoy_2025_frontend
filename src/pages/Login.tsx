@@ -25,8 +25,11 @@ const Login: React.FC = () => {
             <Typography variant="h4" gutterBottom>
                 Welcome to CrytoTip
             </Typography>
+            <Box>
+                <img src="/favicon.png" alt="Streamlabs Logo" style={{  height: '5rem' }} />
+            </Box>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Connect your Streamlabs account to start receiving donations and managing your campaigns.
+                Connect your Streamlabs account to start receiving crypto donations.
             </Typography>
             <Button
                 variant="contained"
