@@ -18,47 +18,25 @@ pipeline {
             }
         }
 
-        stage('Prepare Remote Directory') {
+        stage('Deploy and Build Frontend') {
             steps {
                 script {
                     sshagent(['15']) {
                         sh """
-                        # Connect to the server and prepare the deployment directories
+                        # Prepare remote directory
                         ssh -o StrictHostKeyChecking=no ${DOCKER_SERVER} '
                             rm -rf ${REMOTE_DIR} &&
-                            mkdir -p ${REMOTE_DIR} &&
-                            rm -rf ${HTML_OUTPUT_DIR} &&
-                            mkdir -p ${HTML_OUTPUT_DIR}'
-                        """
-                    }
-                }
-            }
-        }
+                            mkdir -p ${REMOTE_DIR}'
 
-        stage('Copy Project Files to Server') {
-            steps {
-                script {
-                    sshagent(['15']) {
-                        sh """
                         # Copy project files to the remote server
                         scp -r ./* ${DOCKER_SERVER}:${REMOTE_DIR}/
-                        """
-                    }
-                }
-            }
-        }
 
-        stage('Build and Deploy on Server') {
-            steps {
-                script {
-                    sshagent(['15']) {
-                        sh """
-                        # Build the frontend and deploy it on the server
+                        # Execute build.sh script to build and serve the frontend
                         ssh -o StrictHostKeyChecking=no ${DOCKER_SERVER} '
                             cd ${REMOTE_DIR} &&
-                            npm install &&
-                            npm run build &&
-                            cp -r ${BUILD_DIR}/* ${HTML_OUTPUT_DIR}/'
+                            sh build.sh &&
+                            sleep 5 &&
+                            ps aux | grep "serve" | grep -v "grep" || echo "Frontend server failed to start!"'
                         """
                     }
                 }
