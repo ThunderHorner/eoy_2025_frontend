@@ -171,7 +171,7 @@ const CampaignPreview = () => {
 
         const deepLink = wallet === 'metamask'
             ? `https://metamask.app.link/dapp/${encodeURIComponent(baseUrl)}`
-            : `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(baseUrl)}`;
+            : `trust://browser_enable?url=${encodeURIComponent(baseUrl)}`;
 
         // For iOS, we need to use window.location.href
         if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
@@ -181,7 +181,6 @@ const CampaignPreview = () => {
         }
         setWalletModalOpen(false);
     };
-
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
