@@ -70,8 +70,8 @@ const CampaignPreview = () => {
                 message: donationData.message,
                 amount: donationData.amount,
                 campaign: id,
-                currency: Currency.ETH,
-                request_id: request.requestId
+                currency: "USD",
+                tx_hash: request.requestId
             });
             showSnackbar('Donation successful!');
             await loadData();
