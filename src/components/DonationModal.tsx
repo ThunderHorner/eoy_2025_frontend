@@ -1,101 +1,96 @@
 import React from 'react';
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Button,
-    CircularProgress,
-    Alert,
-    MenuItem
-} from '@mui/material';
-import {Currency} from "../types/types.ts";
+import { Box, Modal, useMediaQuery, useTheme } from '@mui/material';
+import PaymentWidget from "@requestnetwork/payment-widget/react";
+import { Campaign } from "../types/types";
+import { DonationForm } from './DonationForm';
 
 interface DonationModalProps {
     open: boolean;
     onClose: () => void;
-    onDonate: () => void;
-    formData: any;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    status: string;
-    selectedCurrency: Currency;
-    onCurrencyChange: (currency: Currency) => void;
+    campaign: Campaign;
+    showAmountInput: boolean;
+    showPaymentWidget: boolean;
+    donationData: {
+        amount: string;
+        name: string;
+        message: string;
+        selectedCurrencies: string[];
+    };
+    onDonationDataChange: {
+        onAmountChange: (amount: string) => void;
+        onNameChange: (name: string) => void;
+        onMessageChange: (message: string) => void;
+        onCurrencyChange: (currencies: string[]) => void;
+    };
+    onAmountSubmit: () => void;
+    onPaymentSuccess: (request: any) => void;
+    onPaymentError: (error: any) => void;
 }
 
-const DonationModal: React.FC<DonationModalProps> = ({
-                                                         open,
-                                                         onClose,
-                                                         onDonate,
-                                                         formData,
-                                                         onChange,
-                                                         status,
-                                                         selectedCurrency,
-                                                         onCurrencyChange
-                                                     }) => (
-    <Dialog open={open} onClose={onClose}>
-        <DialogTitle>Make a Donation</DialogTitle>
-        <DialogContent>
-            {status === 'error' && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    Payment failed. Please try again.
-                </Alert>
-            )}
-            <TextField
-                label="Name"
-                name="name"
-                value={formData.name}
-                onChange={onChange}
-                fullWidth
-                margin="normal"
-            />
-            <TextField
-                label="Message"
-                name="message"
-                value={formData.message}
-                onChange={onChange}
-                fullWidth
-                margin="normal"
-            />
-            <TextField
-                label="Amount"
-                name="amount"
-                type="number"
-                value={formData.amount}
-                onChange={onChange}
-                fullWidth
-                margin="normal"
-            />
-            <TextField
-                select
-                label="Currency"
-                value={selectedCurrency}
-                onChange={(e) => onCurrencyChange(e.target.value as Currency)}
-                fullWidth
-                margin="normal"
-            >
-                {Object.values(Currency).map((currency) => (
-                    <MenuItem key={currency} value={currency}>
-                        {currency}
-                    </MenuItem>
-                ))}
-            </TextField>
-        </DialogContent>
-        <DialogActions>
-            <Button onClick={onClose} color="secondary">
-                Cancel
-            </Button>
-            <Button
-                onClick={onDonate}
-                color="primary"
-                variant="contained"
-                disabled={status === 'processing'}
-                startIcon={status === 'processing' ? <CircularProgress size={20} /> : null}
-            >
-                {status === 'processing' ? 'Processing' : 'Donate'}
-            </Button>
-        </DialogActions>
-    </Dialog>
-);
+export const DonationModal: React.FC<DonationModalProps> = ({
+                                                                open,
+                                                                onClose,
+                                                                campaign,
+                                                                showAmountInput,
+                                                                showPaymentWidget,
+                                                                donationData,
+                                                                onDonationDataChange,
+                                                                onAmountSubmit,
+                                                                onPaymentSuccess,
+                                                                onPaymentError,
+                                                            }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-export default DonationModal;
+    return (
+        <Modal
+            open={open}
+            onClose={onClose}
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
+        >
+            <Box sx={{
+                bgcolor: 'background.paper',
+                borderRadius: 2,
+                p: 3,
+                width: isMobile ? '90%' : '600px',
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+                overflow: 'auto'
+            }}>
+                {showAmountInput ? (
+                    <DonationForm
+                        donationAmount={donationData.amount}
+                        donorName={donationData.name}
+                        donorMessage={donationData.message}
+                        selectedCurrencies={donationData.selectedCurrencies}
+                        onAmountChange={onDonationDataChange.onAmountChange}
+                        onNameChange={onDonationDataChange.onNameChange}
+                        onMessageChange={onDonationDataChange.onMessageChange}
+                        onCurrencyChange={onDonationDataChange.onCurrencyChange}
+                        onSubmit={onAmountSubmit}
+                    />
+                ) : showPaymentWidget && (
+                    <PaymentWidget
+                        sellerInfo={{
+                            name: campaign.title,
+                        }}
+                        productInfo={{
+                            name: donationData.name ? `Donation from ${donationData.name}` : "Donation",
+                            description: donationData.message || `Donation to ${campaign.title}`,
+                        }}
+                        amountInUSD={parseFloat(donationData.amount)}
+                        sellerAddress={campaign.wallet_address}
+                        supportedCurrencies={donationData.selectedCurrencies}
+                        persistRequest={true}
+                        onPaymentSuccess={onPaymentSuccess}
+                        onError={onPaymentError}
+                    />
+                )}
+            </Box>
+        </Modal>
+    );
+};
