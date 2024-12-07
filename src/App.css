@@ -16,3 +16,139 @@ body{
   bottom: 2.8rem;
   right: 0.8rem;
 }
+
+.rn-payment-widget.svelte-1jpcnga.svelte-1jpcnga{
+  width: auto !important;
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
+.rn-payment-widget.svelte-1jpcnga.svelte-1jpcnga {
+  width: auto !important;
+  max-width: 530px;
+  margin: 0 auto;
+  background: #f6f6f7;
+  border-radius: 16px;
+  position: relative;
+  padding: 16px 16px 16px 20px;
+  border-left: 4px solid #0bb489;
+}
+
+.rn-payment-widget-content.svelte-1jpcnga.svelte-1jpcnga {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.rn-payment-widget-content.svelte-1jpcnga.svelte-1jpcnga:not(:empty) {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d1d7e3;
+}
+
+.rn-payment-widget-seller.svelte-1jpcnga.svelte-1jpcnga {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rn-payment-widget-seller.svelte-1jpcnga img.svelte-1jpcnga {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.rn-payment-widget-seller.svelte-1jpcnga span.svelte-1jpcnga {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+}
+
+.rn-payment-widget-product.svelte-1jpcnga.svelte-1jpcnga {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.rn-payment-widget-product-text.svelte-1jpcnga.svelte-1jpcnga {
+  flex: 1;
+  min-width: 0;
+}
+
+.rn-payment-widget-product-text.svelte-1jpcnga h3.svelte-1jpcnga {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: #000;
+}
+
+.rn-payment-widget-product-text.svelte-1jpcnga p.svelte-1jpcnga {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.rn-payment-widget-product.svelte-1jpcnga img.svelte-1jpcnga {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.rn-payment-widget-total.svelte-1jpcnga.svelte-1jpcnga {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rn-payment-widget-total.svelte-1jpcnga span.svelte-1jpcnga {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+}
+
+.rn-payment-widget-total.svelte-1jpcnga span.svelte-1jpcnga:last-child {
+  font-weight: 600;
+}
+
+.rn-payment-button.svelte-1jpcnga.svelte-1jpcnga {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: #0bb489;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.rn-payment-button.svelte-1jpcnga.svelte-1jpcnga:hover:not(:disabled) {
+  background-color: #0a9c77;
+}
+
+.rn-payment-button.svelte-1jpcnga.svelte-1jpcnga:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px !important;
+}
+
+.modal-content {
+  padding: 16px !important;
+}
+
+@media (max-width: 480px) {
+}

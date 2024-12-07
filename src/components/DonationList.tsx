@@ -9,7 +9,10 @@ interface DonationListProps {
 const DonationList: React.FC<DonationListProps> = ({ donations }) => {
     const getExplorerUrl = (hash: string) => {
         // Change this URL based on the network you're using
-        return `https://etherscan.io/tx/${hash}`;
+        console.log(hash)
+        return `https://scan.request.network/request/${hash}`
+        // 01e002e725711e7a2323efa3f4249f500d6c017221d7f693dcbbe9e80b30e612d8
+        // return `https://etherscan.io/tx/${hash}`;
         // https://blockscan.com/tx/0x893e465506e5a27743e06ba0efd90605b56bbca2c4d996d8918f6d5748acf1d7
     };
 
