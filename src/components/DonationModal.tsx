@@ -61,7 +61,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({
             }}>
                 {showAmountInput ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Typography variant="h6">Make a Donation</Typography>
+                        <Typography variant="h6">Choose an amount</Typography>
                         <TextField
                             label="Amount in USD"
                             type="number"
@@ -81,9 +81,13 @@ export const DonationModal: React.FC<DonationModalProps> = ({
                 ) : showPaymentWidget && (
                     <PaymentWidget
                         amountInUSD={parseFloat(donationData.amount)}
-                        buyerInfo={null}
+                        buyerInfo={{
+                          email:"anon@anon.com",
+                          firstName:"John",
+                          lastName:"Doe",
+                        }}
                         sellerInfo={{
-                            name: "",
+                            name: campaign.title,
                             logo: "",
                             taxRegistration: "",
                             firstName: "",

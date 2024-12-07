@@ -2,17 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
     Box,
-    Button,
     CircularProgress,
     Snackbar,
+    TextField,
+    Typography,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
 import { Campaign, Currency, Donation } from "../types/types";
 import { fetchCampaign, fetchDonations, recordDonation } from "../services/ApiService";
 import { CampaignInfo } from '../components/CampaignInfo.tsx';
-import { DonationModal } from '../components/DonationModal';
 import DonationList from "../components/DonationList";
+import PaymentWidget from "@requestnetwork/payment-widget/react";
 
 const CampaignPreview = () => {
     const { id } = useParams<{ id: string }>();
@@ -22,9 +23,6 @@ const CampaignPreview = () => {
     const [campaign, setCampaign] = useState<Campaign | null>(null);
     const [donations, setDonations] = useState<Donation[]>([]);
     const [loading, setLoading] = useState(true);
-    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-    const [showAmountInput, setShowAmountInput] = useState(true);
-    const [showPaymentWidget, setShowPaymentWidget] = useState(false);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
 
@@ -65,15 +63,6 @@ const CampaignPreview = () => {
         setSnackbarOpen(true);
     };
 
-    const handleCopyToClipboard = async (text: string) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            showSnackbar('Copied to clipboard!');
-        } catch (err) {
-            showSnackbar('Failed to copy. Please try manually.');
-        }
-    };
-
     const handlePaymentSuccess = async (request: any) => {
         try {
             await recordDonation(id!, {
@@ -86,23 +75,10 @@ const CampaignPreview = () => {
             });
             showSnackbar('Donation successful!');
             await loadData();
-            handleCloseModal();
         } catch (error) {
             console.error('Error recording donation:', error);
             showSnackbar('Error recording donation');
         }
-    };
-
-    const handleCloseModal = () => {
-        setPaymentModalOpen(false);
-        setShowAmountInput(true);
-        setShowPaymentWidget(false);
-        setDonationData({
-            amount: '',
-            name: '',
-            message: '',
-            selectedCurrencies: ["ETH_MAINNET"],
-        });
     };
 
     if (loading) {
@@ -121,44 +97,81 @@ const CampaignPreview = () => {
         <Box padding={isMobile ? 2 : 4}>
             <CampaignInfo
                 campaign={campaign}
-                onCopy={handleCopyToClipboard}
+                onCopy={(text) => {
+                    navigator.clipboard.writeText(text).then(
+                        () => showSnackbar('Copied to clipboard!'),
+                        () => showSnackbar('Failed to copy. Please try manually.')
+                    );
+                }}
             />
 
-            <Button
-                variant="contained"
-                color="primary"
-                fullWidth={isMobile}
-                onClick={() => setPaymentModalOpen(true)}
-                sx={{ my: 3 }}
-            >
-                Donate Now
-            </Button>
+            <Typography variant="h5" sx={{ my: 3 }}>Donate to {campaign.title}</Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: isMobile ? '100%' : '600px' }}>
+                <TextField
+                    label="Amount in USD"
+                    type="number"
+                    value={donationData.amount}
+                    onChange={(e) =>
+                        setDonationData((prev) => ({ ...prev, amount: e.target.value }))
+                    }
+                    fullWidth
+                    required
+                />
+                <TextField
+                    label="Your Name"
+                    value={donationData.name}
+                    onChange={(e) =>
+                        setDonationData((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                    fullWidth
+                />
+                <TextField
+                    label="Message (Optional)"
+                    value={donationData.message}
+                    onChange={(e) =>
+                        setDonationData((prev) => ({ ...prev, message: e.target.value }))
+                    }
+                    multiline
+                    rows={3}
+                    fullWidth
+                />
+                {donationData.amount && parseFloat(donationData.amount) > 0 && (
+                    <PaymentWidget
+                        amountInUSD={parseFloat(donationData.amount)}
+                        buyerInfo={{
+                            email: "anon@anon.com",
+                            firstName: donationData.name || "Anonymous",
+                            lastName: "",
+                        }}
+                        sellerInfo={{
+                            name: campaign.title,
+                            logo: "",
+                            taxRegistration: "",
+                            firstName: "",
+                            lastName: "",
+                            email: "",
+                            phone: "",
+                            address: {
+                                "street-address": "",
+                                locality: "",
+                                region: "",
+                                "postal-code": "",
+                                "country-name": "",
+                            },
+                        }}
+                        sellerAddress={campaign.wallet_address}
+                        supportedCurrencies={["ETH-base-base", "ETH-mainnet", "USDC-mainnet", "USDT-mainnet"]}
+                        onPaymentSuccess={handlePaymentSuccess}
+                        onError={(error) => {
+                            console.error(error);
+                            showSnackbar('Payment failed. Please try again.');
+                        }}
+                    />
+                )}
+            </Box>
 
             <DonationList donations={donations} />
-
-            <DonationModal
-                open={paymentModalOpen}
-                onClose={handleCloseModal}
-                campaign={campaign}
-                showAmountInput={showAmountInput}
-                showPaymentWidget={showPaymentWidget}
-                donationData={donationData}
-                onDonationDataChange={{
-                    onAmountChange: (amount) => setDonationData(prev => ({ ...prev, amount })),
-                    onNameChange: (name) => setDonationData(prev => ({ ...prev, name })),
-                    onMessageChange: (message) => setDonationData(prev => ({ ...prev, message })),
-                    onCurrencyChange: (currencies) => setDonationData(prev => ({ ...prev, selectedCurrencies: currencies })),
-                }}
-                onAmountSubmit={() => {
-                    setShowAmountInput(false);
-                    setShowPaymentWidget(true);
-                }}
-                onPaymentSuccess={handlePaymentSuccess}
-                onPaymentError={(error) => {
-                    console.error(error);
-                    showSnackbar('Payment failed. Please try again.');
-                }}
-            />
 
             <Snackbar
                 open={snackbarOpen}
