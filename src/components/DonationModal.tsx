@@ -1,8 +1,7 @@
 import React from 'react';
-import { Box, Modal, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Modal, useMediaQuery, useTheme, TextField, Button, Typography } from '@mui/material';
 import PaymentWidget from "@requestnetwork/payment-widget/react";
 import { Campaign } from "../types/types";
-import { DonationForm } from './DonationForm';
 
 interface DonationModalProps {
     open: boolean;
@@ -14,7 +13,6 @@ interface DonationModalProps {
         amount: string;
         name: string;
         message: string;
-        selectedCurrencies: string[];
     };
     onDonationDataChange: {
         onAmountChange: (amount: string) => void;
@@ -62,30 +60,46 @@ export const DonationModal: React.FC<DonationModalProps> = ({
                 overflow: 'auto'
             }}>
                 {showAmountInput ? (
-                    <DonationForm
-                        donationAmount={donationData.amount}
-                        donorName={donationData.name}
-                        donorMessage={donationData.message}
-                        selectedCurrencies={donationData.selectedCurrencies}
-                        onAmountChange={onDonationDataChange.onAmountChange}
-                        onNameChange={onDonationDataChange.onNameChange}
-                        onMessageChange={onDonationDataChange.onMessageChange}
-                        onCurrencyChange={onDonationDataChange.onCurrencyChange}
-                        onSubmit={onAmountSubmit}
-                    />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Typography variant="h6">Make a Donation</Typography>
+                        <TextField
+                            label="Amount in USD"
+                            type="number"
+                            value={donationData.amount}
+                            onChange={(e) => onDonationDataChange.onAmountChange(e.target.value)}
+                            fullWidth
+                            required
+                        />
+                        <Button
+                            variant="contained"
+                            onClick={onAmountSubmit}
+                            disabled={!donationData.amount || parseFloat(donationData.amount) <= 0}
+                        >
+                            Continue to Payment
+                        </Button>
+                    </Box>
                 ) : showPaymentWidget && (
                     <PaymentWidget
-                        sellerInfo={{
-                            name: campaign.title,
-                        }}
-                        productInfo={{
-                            name: donationData.name ? `Donation from ${donationData.name}` : "Donation",
-                            description: donationData.message || `Donation to ${campaign.title}`,
-                        }}
                         amountInUSD={parseFloat(donationData.amount)}
+                        buyerInfo={null}
+                        sellerInfo={{
+                            name: "",
+                            logo: "",
+                            taxRegistration: "",
+                            firstName: "",
+                            lastName: "",
+                            email: "",
+                            phone: "",
+                            address: {
+                                "street-address": "",
+                                "locality": "",
+                                "region": "",
+                                "postal-code": "",
+                                "country-name": ""
+                            }
+                        }}
                         sellerAddress={campaign.wallet_address}
-                        supportedCurrencies={donationData.selectedCurrencies}
-                        persistRequest={true}
+                        supportedCurrencies={["ETH-base-base", "ETH-mainnet", "USDC-mainnet", "USDT-mainnet"]}
                         onPaymentSuccess={onPaymentSuccess}
                         onError={onPaymentError}
                     />

@@ -10,11 +10,16 @@ import {
     Button,
 } from '@mui/material';
 
+// Correct Request Network currency codes
 export const SUPPORTED_CURRENCIES = [
-    { id: "ETH_MAINNET", label: "ETH" },
-    { id: "USDC_MAINNET", label: "USDC" },
-    { id: "DAI_MAINNET", label: "DAI" },
-    { id: "USDT_MAINNET", label: "USDT" },
+    { id: "MATIC-POLYGON", label: "MATIC" },
+    { id: "USDC-POLYGON", label: "USDC (Polygon)" },
+    { id: "ETH-GOERLI", label: "ETH (Goerli)" },
+    { id: "FAU-GOERLI", label: "FAU (Goerli)" },
+    // Mainnet options
+    { id: "ETH-MAINNET", label: "ETH" },
+    { id: "USDC-MAINNET", label: "USDC" },
+    { id: "DAI-MAINNET", label: "DAI" }
 ];
 
 interface DonationFormProps {
@@ -90,3 +95,4 @@ export const DonationForm: React.FC<DonationFormProps> = ({
         </Box>
     );
 };
+
