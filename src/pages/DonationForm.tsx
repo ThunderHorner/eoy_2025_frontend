@@ -109,7 +109,7 @@ const DonationForm = ({
                                 },
                             }}
                             sellerAddress={walletAddress}
-                            supportedCurrencies={["ETH-base-base", "ETH-mainnet", "USDC-mainnet", "USDT-mainnet"]}
+                            supportedCurrencies={["ETH-base-base", "ETH-mainnet"]}
                             onPaymentSuccess={onPaymentSuccess}
                             onError={onPaymentError}
                         />
